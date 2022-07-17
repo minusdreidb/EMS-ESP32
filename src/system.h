@@ -263,8 +263,8 @@ class System {
     bool        low_clock_;
     String      board_profile_;
     uint8_t     pbutton_gpio_;
-    uint8_t     rx_gpio_;
-    uint8_t     tx_gpio_;
+    int8_t      rx_gpio_;
+    int8_t      tx_gpio_;
     uint8_t     dallas_gpio_;
     bool        telnet_enabled_;
     bool        syslog_enabled_;

@@ -176,8 +176,8 @@ void EMSESP::watch_id(uint16_t watch_id) {
 // this is called when the tx_mode is persisted in the FS either via Web UI or the console
 void EMSESP::uart_init() {
     uint8_t tx_mode = 0;
-    uint8_t rx_gpio = 0;
-    uint8_t tx_gpio = 0;
+    int8_t rx_gpio = 0;
+    int8_t tx_gpio = 0;
     EMSESP::webSettingsService.read([&](WebSettings & settings) {
         tx_mode = settings.tx_mode;
         rx_gpio = settings.rx_gpio;
@@ -187,7 +187,7 @@ void EMSESP::uart_init() {
     EMSuart::stop();
 
     // don't start UART if we have invalid GPIOs
-    if (System::is_valid_gpio(rx_gpio) && System::is_valid_gpio(tx_gpio)) {
+    if (System::is_valid_gpio(abs(rx_gpio)) && System::is_valid_gpio(abs(tx_gpio))) {
         EMSuart::start(tx_mode, rx_gpio, tx_gpio); // start UART
     } else {
         LOG_WARNING(F("Invalid UART Rx/Tx GPIOs. Check config."));

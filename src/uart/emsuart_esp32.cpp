@@ -72,7 +72,7 @@ void EMSuart::uart_event_task(void * pvParameters) {
 /*
  * init UART driver
  */
-void EMSuart::start(const uint8_t tx_mode, const uint8_t rx_gpio, const uint8_t tx_gpio) {
+void EMSuart::start(const uint8_t tx_mode, const int8_t rx_gpio, const int8_t tx_gpio) {
     if (tx_mode_ == 0xFF) {
         uart_config_t uart_config = {
             .baud_rate  = EMSUART_BAUD,
@@ -85,6 +85,12 @@ void EMSuart::start(const uint8_t tx_mode, const uint8_t rx_gpio, const uint8_t 
         uart_driver_install(EMSUART_NUM, 129, 0, (EMS_MAXBUFFERSIZE + 1) * 2, &uart_queue, 0); // buffer must be > fifo
         uart_param_config(EMSUART_NUM, &uart_config);
         uart_set_pin(EMSUART_NUM, tx_gpio, rx_gpio, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+        
+        /* Invert line levels for RX and TX respectivley if tx_gpio and rx_gpio are negative */
+        uint32_t inv_mask = (rx_gpio < 0 ? UART_SIGNAL_RXD_INV : 0) | (tx_gpio < 0 ? UART_SIGNAL_TXD_INV : 0);
+        if (inv_mask) {
+            uart_set_line_inverse(EMSUART_NUM, inv_mask);
+        }
         uart_set_rx_full_threshold(EMSUART_NUM, 1);
         uart_set_rx_timeout(EMSUART_NUM, 0); // disable
         xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, configMAX_PRIORITIES - 1, NULL);

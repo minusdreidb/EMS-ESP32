@@ -62,7 +62,7 @@ class EMSuart {
     EMSuart()  = default;
     ~EMSuart() = default;
 
-    static void     start(const uint8_t tx_mode, const uint8_t rx_gpio, const uint8_t tx_gpio);
+    static void     start(const uint8_t tx_mode, const int8_t rx_gpio, const int8_t tx_gpio);
     static void     send_poll(const uint8_t data);
     static void     stop();
     static uint16_t transmit(const uint8_t * buf, const uint8_t len);

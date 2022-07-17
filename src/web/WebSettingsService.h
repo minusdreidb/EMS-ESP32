@@ -41,8 +41,8 @@ class WebSettings {
     String   syslog_host;
     uint16_t syslog_port;
     bool     trace_raw;
-    uint8_t  rx_gpio;
-    uint8_t  tx_gpio;
+    int8_t  rx_gpio;
+    int8_t  tx_gpio;
     uint8_t  dallas_gpio;
     bool     dallas_parasite;
     uint8_t  led_gpio;

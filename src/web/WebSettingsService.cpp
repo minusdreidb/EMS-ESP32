@@ -90,8 +90,8 @@ StateUpdateResult WebSettings::update(JsonObject & root, WebSettings & settings)
 
     uint8_t default_led_gpio       = data[0];
     uint8_t default_dallas_gpio    = data[1];
-    uint8_t default_rx_gpio        = data[2];
-    uint8_t default_tx_gpio        = data[3];
+    int8_t default_rx_gpio         = data[2];
+    int8_t default_tx_gpio         = data[3];
     uint8_t default_pbutton_gpio   = data[4];
     uint8_t default_phy_type       = data[5];
     uint8_t default_eth_power      = data[6];

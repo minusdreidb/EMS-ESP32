@@ -53,8 +53,8 @@ class DummySettings {
     int8_t   weblog_level          = 1;
     uint8_t  weblog_buffer         = 50;
     bool     weblog_compact        = true;
-    uint8_t  rx_gpio               = 0;
-    uint8_t  tx_gpio               = 0;
+    int8_t   rx_gpio               = 0;
+    int8_t   tx_gpio               = 0;
     uint8_t  dallas_gpio           = 16; // to ensure its enabled
     bool     dallas_parasite       = false;
     uint8_t  led_gpio              = 0;
