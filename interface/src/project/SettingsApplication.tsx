@@ -142,7 +142,7 @@ const SettingsApplication: FC = () => {
                 <ValidatedTextField
                   fieldErrors={fieldErrors}
                   name="rx_gpio"
-                  label="Rx GPIO"
+                  label="Rx GPIO (Negative GPIO inverts line level)"
                   fullWidth
                   variant="outlined"
                   value={numberValue(data.rx_gpio)}
@@ -156,7 +156,7 @@ const SettingsApplication: FC = () => {
                 <ValidatedTextField
                   fieldErrors={fieldErrors}
                   name="tx_gpio"
-                  label="Tx GPIO"
+                  label="Tx GPIO (Negative GPIO inverts line level)"
                   fullWidth
                   variant="outlined"
                   value={numberValue(data.tx_gpio)}
