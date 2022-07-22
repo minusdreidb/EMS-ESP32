@@ -68,6 +68,7 @@ class EMSuart {
     static uint16_t transmit(const uint8_t * buf, const uint8_t len);
 
   private:
+    static uint32_t invert_mask;
     static void uart_event_task(void * pvParameters);
 };
 

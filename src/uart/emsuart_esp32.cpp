@@ -34,6 +34,16 @@ namespace emsesp {
 
 static QueueHandle_t uart_queue;
 uint8_t              tx_mode_ = 0xFF;
+uint32_t             EMSuart::invert_mask = 0;
+
+/*
+ * Generate BRK in sw uart mode
+ */
+static inline void sw_uart_gen_break(uint32_t length_us, uint32_t invert_mask) {
+      uart_set_line_inverse(EMSUART_NUM, ~invert_mask & UART_SIGNAL_TXD_INV);
+      delayMicroseconds(length_us);
+      uart_set_line_inverse(EMSUART_NUM, invert_mask & UART_SIGNAL_TXD_INV);
+};
 
 /*
 * receive task, wait for break and call incoming_telegram
@@ -87,10 +97,9 @@ void EMSuart::start(const uint8_t tx_mode, const int8_t rx_gpio, const int8_t tx
         uart_set_pin(EMSUART_NUM, tx_gpio, rx_gpio, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
         
         /* Invert line levels for RX and TX respectivley if tx_gpio and rx_gpio are negative */
-        uint32_t inv_mask = (rx_gpio < 0 ? UART_SIGNAL_RXD_INV : 0) | (tx_gpio < 0 ? UART_SIGNAL_TXD_INV : 0);
-        if (inv_mask) {
-            uart_set_line_inverse(EMSUART_NUM, inv_mask);
-        }
+        invert_mask = (rx_gpio < 0 ? UART_SIGNAL_RXD_INV : 0) | (tx_gpio < 0 ? UART_SIGNAL_TXD_INV : 0);
+        uart_set_line_inverse(EMSUART_NUM, invert_mask);
+
         uart_set_rx_full_threshold(EMSUART_NUM, 1);
         uart_set_rx_timeout(EMSUART_NUM, 0); // disable
         xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, configMAX_PRIORITIES - 1, NULL);
@@ -125,51 +134,48 @@ uint16_t EMSuart::transmit(const uint8_t * buf, const uint8_t len) {
         return EMS_TX_STATUS_ERR;
     }
 
-    if (tx_mode_ == 0) {
-        return EMS_TX_STATUS_OK;
-    }
-
-    if (tx_mode_ == EMS_TXMODE_HW) { // hardware controlled mode
+    switch (tx_mode_) {
+    case 0:
+        break;
+    
+    case EMS_TXMODE_HW:
+        // hardware controlled mode
         uart_write_bytes_with_break(EMSUART_NUM, buf, len, 10);
-        return EMS_TX_STATUS_OK;
-    }
-
-    if (tx_mode_ == EMS_TXMODE_EMSPLUS) { // EMS+ with long delay
+        break;
+        
+    case EMS_TXMODE_EMSPLUS:
+        // EMS+ with long delay
         for (uint8_t i = 0; i < len; i++) {
             uart_write_bytes(EMSUART_NUM, &buf[i], 1);
-            delayMicroseconds(EMSUART_TX_WAIT_PLUS);
+            delayMicroseconds(EMSUART_TX_BRK_PLUS);
         }
-        uart_set_line_inverse(EMSUART_NUM, UART_SIGNAL_TXD_INV);
-        delayMicroseconds(EMSUART_TX_BRK_PLUS);
-        uart_set_line_inverse(EMSUART_NUM, 0);
-        return EMS_TX_STATUS_OK;
-    }
+        sw_uart_gen_break(EMSUART_TX_BRK_HT3, invert_mask);
+        break;
 
-    if (tx_mode_ == EMS_TXMODE_HT3) { // HT3 with 7 bittimes delay
+    case EMS_TXMODE_HT3:
+        // HT3 with 7 bittimes delay
         for (uint8_t i = 0; i < len; i++) {
             uart_write_bytes(EMSUART_NUM, &buf[i], 1);
             delayMicroseconds(EMSUART_TX_WAIT_HT3);
         }
-        uart_set_line_inverse(EMSUART_NUM, UART_SIGNAL_TXD_INV);
-        delayMicroseconds(EMSUART_TX_BRK_HT3);
-        uart_set_line_inverse(EMSUART_NUM, 0);
-        return EMS_TX_STATUS_OK;
+        sw_uart_gen_break(EMSUART_TX_BRK_HT3, invert_mask);
+        break;
+        
+    default:
+        // mode 1: wait for echo after each byte
+        for (uint8_t i = 0; i < len; i++) {
+            size_t rx0, rx1;
+            uart_get_buffered_data_len(EMSUART_NUM, &rx0);
+            uart_write_bytes(EMSUART_NUM, &buf[i], 1);
+            uint16_t timeoutcnt = EMSUART_TX_TIMEOUT;
+            do {
+                delayMicroseconds(EMSUART_TX_BUSY_WAIT); // burn CPU cycles...
+                uart_get_buffered_data_len(EMSUART_NUM, &rx1);
+            } while ((rx1 == rx0) && (--timeoutcnt));
+        }
+        sw_uart_gen_break(EMSUART_TX_BRK_EMS, invert_mask);
+        break;
     }
-
-    // mode 1: wait for echo after each byte
-    for (uint8_t i = 0; i < len; i++) {
-        size_t rx0, rx1;
-        uart_get_buffered_data_len(EMSUART_NUM, &rx0);
-        uart_write_bytes(EMSUART_NUM, &buf[i], 1);
-        uint16_t timeoutcnt = EMSUART_TX_TIMEOUT;
-        do {
-            delayMicroseconds(EMSUART_TX_BUSY_WAIT); // burn CPU cycles...
-            uart_get_buffered_data_len(EMSUART_NUM, &rx1);
-        } while ((rx1 == rx0) && (--timeoutcnt));
-    }
-    uart_set_line_inverse(EMSUART_NUM, UART_SIGNAL_TXD_INV);
-    delayMicroseconds(EMSUART_TX_BRK_EMS);
-    uart_set_line_inverse(EMSUART_NUM, 0);
     return EMS_TX_STATUS_OK;
 }
 
