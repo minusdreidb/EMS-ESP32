@@ -37,12 +37,12 @@ uint8_t              tx_mode_ = 0xFF;
 uint32_t             EMSuart::invert_mask = 0;
 
 /*
- * Generate BRK in sw uart mode
+ * Generate generate BREAK in software
  */
-static inline void sw_uart_gen_break(uint32_t length_us, uint32_t invert_mask) {
-      uart_set_line_inverse(EMSUART_NUM, ~invert_mask & UART_SIGNAL_TXD_INV);
+static inline void generate_break(uint32_t length_us, uint32_t invert_mask) {
+      uart_set_line_inverse(EMSUART_NUM, invert_mask ^ UART_SIGNAL_TXD_INV);
       delayMicroseconds(length_us);
-      uart_set_line_inverse(EMSUART_NUM, invert_mask & UART_SIGNAL_TXD_INV);
+      uart_set_line_inverse(EMSUART_NUM, invert_mask );
 };
 
 /*
@@ -149,7 +149,7 @@ uint16_t EMSuart::transmit(const uint8_t * buf, const uint8_t len) {
             uart_write_bytes(EMSUART_NUM, &buf[i], 1);
             delayMicroseconds(EMSUART_TX_BRK_PLUS);
         }
-        sw_uart_gen_break(EMSUART_TX_BRK_HT3, invert_mask);
+        generate_break(EMSUART_TX_BRK_HT3, invert_mask);
         break;
 
     case EMS_TXMODE_HT3:
@@ -158,7 +158,7 @@ uint16_t EMSuart::transmit(const uint8_t * buf, const uint8_t len) {
             uart_write_bytes(EMSUART_NUM, &buf[i], 1);
             delayMicroseconds(EMSUART_TX_WAIT_HT3);
         }
-        sw_uart_gen_break(EMSUART_TX_BRK_HT3, invert_mask);
+        generate_break(EMSUART_TX_BRK_HT3, invert_mask);
         break;
         
     default:
@@ -173,7 +173,7 @@ uint16_t EMSuart::transmit(const uint8_t * buf, const uint8_t len) {
                 uart_get_buffered_data_len(EMSUART_NUM, &rx1);
             } while ((rx1 == rx0) && (--timeoutcnt));
         }
-        sw_uart_gen_break(EMSUART_TX_BRK_EMS, invert_mask);
+        generate_break(EMSUART_TX_BRK_EMS, invert_mask);
         break;
     }
     return EMS_TX_STATUS_OK;
